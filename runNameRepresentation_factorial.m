@@ -10,6 +10,7 @@ time=datetime;
 %baseline values for parameters that will vary across scenarios:
 
 numReps=1
+distr=1 %1=normal distributions in capital and merit, 2=lognormal (same mean and var)
 evaluations=[0,1/3,2/3,1]; %capital evaluation weight
 mateChoice_all=[0:0.4:0.8]; %capital mating weight
 merit_herit_all=[0:0.4:0.8]; %merit heritability
@@ -91,14 +92,14 @@ for j=1:length(evaluations)
                                     AcademiaPorp=AcademiaPorp_all(q);
                                     ParamValues(:,i)=[round(evaluation,2),mateChoice,merit_herit,capital_herit,capital_added,MeritCapCausal,CV,AcademiaPorp]';
                                     
-                                    capital_added_var=(capital_added*CV)*(capital_added>0); %variance in captial added to children of academics
+                                    capital_added_var=(capital_added*CV)*(capital_added>0); %variance in capital added to academics
                                     merit_var=(merit_mean*CV)*(merit_mean>0);
                                     capital_var=(capital_mean*CV)*(capital_mean>0);
                                     initAcademiaPop=round(numNames*initPopPerName*AcademiaPorp); %number of people in academia
                                     
                                     display(['running scenario ' num2str(ceil(i/numReps)) ' of ' num2str(numScenarios/numReps) ', rep # ' num2str(r)])
                                     %subplot(3,numScenarios/3,i)
-                                    [authorLikeRatio(i),topAcadLikeRatio(i),botAcadLikeRatio(i),topCapLikeRatio(i),botCapLikeRatio(i),Port_top(i),rankMeritSlope(i),capMeritSlope(i),capMeritCor(i),LRMeritSlope(i),Merit_pop(i),Merit_top(i),Merit_acad(i),Capital_pop(i),Capital_top(i),Capital_acad(i)]=nameRepresentation_noPlot(numGen,numNames,initPopPerName,nameDistr,initAcademiaPop,reprodRate,reprodCost1,reprodCost2,evaluation,merit_mean,merit_var,capital_mean,capital_var,MeritCapCausal,mateChoice,merit_herit,capital_herit,capital_added,capital_added_var,child_surname,child_surnameRelVar,nameMutation);
+                                    [authorLikeRatio(i),topAcadLikeRatio(i),botAcadLikeRatio(i),topCapLikeRatio(i),botCapLikeRatio(i),Port_top(i),rankMeritSlope(i),capMeritSlope(i),capMeritCor(i),LRMeritSlope(i),Merit_pop(i),Merit_top(i),Merit_acad(i),Capital_pop(i),Capital_top(i),Capital_acad(i)]=nameRepresentation_noPlot_lognorm(numGen,numNames,initPopPerName,nameDistr,initAcademiaPop,reprodRate,reprodCost1,reprodCost2,evaluation,merit_mean,merit_var,capital_mean,capital_var,MeritCapCausal,mateChoice,merit_herit,capital_herit,capital_added,capital_added_var,child_surname,child_surnameRelVar,nameMutation,distr);
                                     i=i+1;
                                 end
                             end
@@ -321,6 +322,7 @@ end
 
 predictors=[topAcadLikeRatio;topCapLikeRatio];%[authorLikeRatio;topAcadLikeRatio;topCapLikeRatio];
 responses=[Merit_acad;Port_top;rankMeritSlope;capMeritSlope];
+%responses=[capMeritSlope;capMeritCor];
 for pred=1:size(predictors,1)
     %figure('Color', [1 1 1],'Position',[1 scrsz(2) scrsz(3)/2 scrsz(4)/1.5]);
     figure('Color', [1 1 1],'Position',[1 scrsz(2) scrsz(3)/4 scrsz(4)/2.7]);
@@ -383,7 +385,7 @@ for pred=1:size(predictors,1)
         legend('off')
         if pt==1
             label_h=ylabel('academics^\primes mean merit');
-            ylim([99,133]) %90 155
+            ylim([99,134]) %90 155
             %ylim([98,143])
             yline(100);
         elseif pt==2
