@@ -37,46 +37,58 @@ PubNorm=[1 USPubR];
 
 NormType=2; %1 for global reference, 2 for US reference
 
-%overwrite ratio data with chosen normalization:
+%overwrite ratio data (originally in US reference) with chosen normalization:
 HighIncomeUS=HighIncomeUS.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType)];
 LowIncomeUS=LowIncomeUS.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType)];
 
-HarvardEnvSci=HarvardEnvSci./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
-HarvardImmun=HarvardImmun./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
-HarvardSocio=HarvardSocio./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
-HarvardEvol=HarvardEvol./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
-HarvardEthni=HarvardEthni./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
-HarvardComSci=HarvardComSci./[EntLRNorm(NormType) AdvRNorm(NormType) PubNorm(NormType) 1];
+HarvardEnvSci=HarvardEnvSci.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
+HarvardImmun=HarvardImmun.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
+HarvardSocio=HarvardSocio.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
+HarvardEvol=HarvardEvol.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
+HarvardEthni=HarvardEthni.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
+HarvardComSci=HarvardComSci.*[EntLRNorm(3-NormType) AdvRNorm(3-NormType) PubNorm(3-NormType) 1 1];
 
 %get regressions of publications & rel pub on LR:
 HarvardFocusData={HarvardComSci,HarvardEnvSci,HarvardEthni,HarvardEvol,HarvardImmun,HarvardSocio};
 HarvardFocusUnit={'ComSci','EnvSci','Ethni','Evol','Immun','Socio'};
-for plotType=[4]
+for plotType=[4] %4: plotpersonal publication on y-axis; 3: plot publication index on y-axis
+    logConstant=.1;
     figure('Color', [1 1 1],'Position',[1 scrsz(2) scrsz(3)/1.5 scrsz(4)/2]);
     for i=1:6
-        mdlFocus=fitlm(log10(HarvardFocusData{i}(:,1)+1),log10(HarvardFocusData{i}(:,plotType)+1));
+        %perform linear regression with one predictor (LR):
+        mdlFocus=fitlm(log10(HarvardFocusData{i}(:,1)+logConstant),log10(HarvardFocusData{i}(:,plotType)));
+        %perform linear regression with two predictors (LR & yrs after PhD):
+        tbl=table(log10(HarvardFocusData{i}(:,1)+logConstant),HarvardFocusData{i}(:,5),log10(HarvardFocusData{i}(:,4)),'VariableNames',{'LR','yr','pub'});
+        %lme = fitlme(tbl,'pub~LR+(1|yr)+(LR-1|yr)'); %mixed effect
+        lm = fitlm(tbl); %fixed effect
         subplot(2,3,i)
         pl=plot(mdlFocus);
         set(pl,'LineWidth',2,'Color','k')
         title(HarvardFocusUnit{i},'fontweight','normal')
         if i>3
-            xlabel 'log(LR+1)'
+            xlabel(['log(LR+' num2str(logConstant,2) ')'])
         else
             xlabel ''
         end
         if i==1 || i==4
-            label_h=ylabel('log(pub+1)');
+            label_h=ylabel(['log(pub)']);
         else
             label_h=ylabel('');
         end
         legend off
         getX=xlim;
-        text((getX(2)-getX(1))*0.3+getX(1),0.5,{['\beta=' num2str(mdlFocus.Coefficients.Estimate(2),2) '\pm' num2str(mdlFocus.Coefficients.SE(2),2)];['p=' num2str(mdlFocus.Coefficients.pValue(2),2) ' (n=' num2str(mdlFocus.NumObservations) ')']},'Fontsize',16);
+        %text(diff(getX)*0.3+getX(1),0.5,{['\beta=' num2str(mdlFocus.Coefficients.Estimate(2),2) '\pm' num2str(mdlFocus.Coefficients.SE(2),2)];['p=' num2str(mdlFocus.Coefficients.pValue(2),2) ' (n=' num2str(mdlFocus.NumObservations) ')']},'Fontsize',16);
+        %text(diff(getX)*0.3+getX(1),0.5,{['\beta_{LR}=' num2str(lm.Coefficients.Estimate(2),2) '\pm' num2str(lm.Coefficients.SE(2),2)];['p=' num2str(lm.Coefficients.pValue(2),2) ' (n=' num2str(mdlFocus.NumObservations) ')']},'Fontsize',16);
+        text(diff(getX)*0.05+getX(1),0.5,{['\beta_{LR}=' num2str(lm.Coefficients.Estimate(2),1) '\pm' num2str(lm.Coefficients.SE(2),1) ', \beta_{yr}=' num2str(lm.Coefficients.Estimate(3),2) '\pm' num2str(lm.Coefficients.SE(3),1)];['p_{LR}=' num2str(lm.Coefficients.pValue(2),2) ', p_{yr}=' num2str(lm.Coefficients.pValue(3),2) ' (n=' num2str(lm.NumObservations) ')']},'Fontsize',12);  
         ylim([0,3])
         ylims=ylim;
-        text(label_h.Position(1),ylims(2)+diff(ylims)*0.11,char(64+i),'Fontsize',20)
+        text(getX(1)-diff(getX)*0.18,ylims(2)+diff(ylims)*0.11,char(64+i),'Fontsize',20)
     end
 end
+% 
+% tbl=table(log10(HarvardEthni(:,1)+logConstant),HarvardEthni(:,5),log10(HarvardEthni(:,4)+logConstant),'VariableNames',{'LR','yr','pub'})
+% lme = fitlme(tbl,'pub~LR+(1|yr)+(LR-1|yr)')
+% lm = fitlm(tbl)
 
 HarvardArt=HarvardArt*EntLRNorm(3-NormType);
 HarvardSocioSci=HarvardSocioSci*EntLRNorm(3-NormType);
